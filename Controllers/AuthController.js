@@ -13,10 +13,7 @@ exports.registerAdmin = async (req, res) => {
     if (existingAdmin) {
       return res.status(400).json({ message: 'Admin already exists' });
     }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const newAdmin = new Admin({ username, email, password: hashedPassword });
-
+    const newAdmin = new Admin({ username, email, password });
     await newAdmin.save();
     res.status(201).json({ message: 'Admin registered successfully' });
   } catch (error) {
@@ -39,7 +36,8 @@ exports.loginAdmin = async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    const token = jwt.sign({ id: admin._id, username: admin. username },  process.env.JWT_SECRET, { expiresIn: '8h' });
+    const token = jwt.sign({ id: admin._id,username: admin.username },  process.env.JWT_SECRET, { expiresIn: '8h' });
+    
 
     res.status(200).json({ message: 'Login successful', token });
     
