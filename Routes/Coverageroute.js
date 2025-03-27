@@ -1,3 +1,4 @@
+
 const express = require('express');
 const router = express.Router();
 const coverageController = require('../Controllers/CoverageController');
@@ -5,7 +6,7 @@ const verifyToken = require('../middleware/Auth');
 
 
 // Add new coverage
-router.post('/coverage/add', verifyToken , coverageController.addCoverage);
+router.post('/coverage/add', verifyToken, coverageController.addCoverage);
 
 // Get all coverages
 router.get('/coverage/all', verifyToken, coverageController.getAllCoverages);
@@ -23,9 +24,10 @@ router.get('/coverages/filter', verifyToken, coverageController.filterCoverages)
 router.put('/coverage/update/:coverageNumber',verifyToken, coverageController.updateCoverage);
 
 // Delete a coverage by coverage number
-router.delete('/coverage/delete/:coverageNumber', coverageController.deleteCoverage);
+router.delete('/coverage/delete/:coverageNumber', verifyToken, coverageController.deleteCoverage);
 
-router.get('/coverages/current-month', verifyToken, coverageController.getCoveragesCurrentMonth);
+
+router.get('/coverages/current-month', coverageController.getCoveragesCurrentMonth);
 
 router.get('/coverages/month-count-for-all', verifyToken, coverageController.getCoverageCountByCorrespondent);
 

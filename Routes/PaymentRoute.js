@@ -33,5 +33,3 @@ router.get('/payments/pending/current-month', calculatePendingPaymentsCurrentMon
 router.get('/payments/approvedby/all',verifyToken,getApprovedPaymentsByFilter);
 
 module.exports = router;
-
-

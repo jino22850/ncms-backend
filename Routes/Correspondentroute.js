@@ -14,7 +14,7 @@ const verifyToken = require('../middleware/Auth');
 const router = express.Router();
 
 // Add a new correspondent
-router.post('/add', addCorrespondent);
+router.post('/add',  addCorrespondent);
 
 // Update an existing correspondent
 router.put('/update/:CorId', updateCorrespondent);

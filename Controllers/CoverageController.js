@@ -2,6 +2,7 @@ const Coverage = require('../models/Coverage');
 const Correspondent = require('../models/Correspondent');
 const Category = require('../models/Category');
 const mongoose = require('mongoose');
+const Payment = require('../models/Payment');
 
 
 
@@ -69,23 +70,45 @@ const addCoverage = async (req, res) => {
     }
 };
 
-
-
-
-
-
-// Get all coverages
 const getAllCoverages = async (req, res) => {
     try {
+        // Fetch all coverages with populated correspondent and category details
         const coverages = await Coverage.find()
             .populate('correspondent', 'name CorId district')
-             .populate('Category', 'name');
-        res.status(200).json(coverages);
+            .populate('Category', 'name');
+
+        if (coverages.length === 0) {
+            return res.status(404).json({ message: 'No coverages found.' });
+        }
+
+        // Find all coverage numbers that already have a payment
+        const paidCoverages = await Payment.distinct('coverageNumber');
+
+        // Filter out coverages that already have payments
+        const coveragesWithoutPayments = coverages.filter(coverage => !paidCoverages.includes(coverage.coverageNumber));
+
+        res.status(200).json(coveragesWithoutPayments);
     } catch (error) {
         console.error('Error in getAllCoverages:', error.message);
         res.status(500).json({ message: 'Internal server error', error: error.message });
     }
 };
+
+
+
+
+// Get all coverages
+// const getAllCoverages = async (req, res) => {
+//     try {
+//         const coverages = await Coverage.find()
+//             .populate('correspondent', 'name CorId district')
+//              .populate('Category', 'name');
+//         res.status(200).json(coverages);
+//     } catch (error) {
+//         console.error('Error in getAllCoverages:', error.message);
+//         res.status(500).json({ message: 'Internal server error', error: error.message });
+//     }
+// };
 
 const getAllCoverage = async (req, res) => {
     try {
@@ -153,6 +176,7 @@ const getAllCoverage = async (req, res) => {
     }
 };
 
+
 // Get coverage by coverage number
 const getCoverageByNumber = async (req, res) => {
     try {
@@ -214,7 +238,6 @@ const getCoveragesByTelecastDate = async (req, res) => {
 };
 
 
-// Update a coverage
 const updateCoverage = async (req, res) => {
     try {
         const { coverageNumber } = req.params;
@@ -232,16 +255,23 @@ const updateCoverage = async (req, res) => {
             id,
         } = req.body;
 
-     
+        // Check if the coverage has already been paid for
+        const existingPayment = await Payment.findOne({ coverageNumber });
+
+        if (existingPayment) {
+            return res.status(403).json({ message: 'This coverage cannot be edited as a payment has already been generated.' });
+        }
+
+        // Validate telecast status
         if (telecastStatus === 'Telecast' && !telecastType) {
             return res.status(400).json({ message: 'Telecast type must be specified when telecast status is "Telecast".' });
         }
 
-        
-        const correspondentid = await Correspondent.findOne({_id: correspondent });
+        // Validate correspondent
+        const correspondentid = await Correspondent.findOne({ _id: correspondent });
         if (!correspondentid) return res.status(404).json({ message: 'Correspondent not found' });
 
-       
+        // Prepare updated data
         const updatedData = {
             correspondent: correspondentid._id,
             fileNumber,
@@ -261,8 +291,7 @@ const updateCoverage = async (req, res) => {
             { coverageNumber },
             updatedData,
             { new: true, runValidators: true }
-        )
-            .populate('correspondent', 'name CorId ')
+        ).populate('correspondent', 'name CorId');
 
         if (!updatedCoverage) {
             return res.status(404).json({ message: 'Coverage not found' });
@@ -274,6 +303,7 @@ const updateCoverage = async (req, res) => {
         res.status(500).json({ message: 'Internal server error', error: error.message });
     }
 };
+
 
 // Delete a coverage
 const deleteCoverage = async (req, res) => {
@@ -291,6 +321,7 @@ const deleteCoverage = async (req, res) => {
         res.status(500).json({ message: 'Internal server error', error: error.message });
     }
 };
+
 
 const getCoveragesCurrentMonth = async (req, res) => {
     try {
