@@ -72,21 +72,36 @@ const addCoverage = async (req, res) => {
 
 const getAllCoverages = async (req, res) => {
     try {
+        // Get the current month and year
+        const currentMonth = new Date().getMonth() + 1; // Months are 0-based in JavaScript, so add 1
+        const currentYear = new Date().getFullYear();
+
         // Fetch all coverages with populated correspondent and category details
-        const coverages = await Coverage.find()
+        const coverages = await Coverage.find({
+            // Filter coverages by current month and year
+            'receivedDate': {
+                $gte: new Date(currentYear, currentMonth - 1, 1), // Start of the current month
+                $lt: new Date(currentYear, currentMonth, 1), // Start of the next month (exclusive)
+            }
+        })
             .populate('correspondent', 'name CorId district')
             .populate('Category', 'name');
 
         if (coverages.length === 0) {
-            return res.status(404).json({ message: 'No coverages found.' });
+            return res.status(404).json({ message: 'No coverages found for the current month.' });
         }
 
-        // Find all coverage numbers that already have a payment
-        const paidCoverages = await Payment.distinct('coverageNumber');
+        // Fetch all coverage numbers that already have a payment
+        const paidCoverages = await Payment.find().distinct('coverageNumber');
 
         // Filter out coverages that already have payments
         const coveragesWithoutPayments = coverages.filter(coverage => !paidCoverages.includes(coverage.coverageNumber));
 
+        if (coveragesWithoutPayments.length === 0) {
+            return res.status(404).json({ message: 'No coverage data available without payments.' });
+        }
+
+        // Return the filtered coverages without payments
         res.status(200).json(coveragesWithoutPayments);
     } catch (error) {
         console.error('Error in getAllCoverages:', error.message);
@@ -98,17 +113,17 @@ const getAllCoverages = async (req, res) => {
 
 
 // Get all coverages
-// const getAllCoverages = async (req, res) => {
-//     try {
-//         const coverages = await Coverage.find()
-//             .populate('correspondent', 'name CorId district')
-//              .populate('Category', 'name');
-//         res.status(200).json(coverages);
-//     } catch (error) {
-//         console.error('Error in getAllCoverages:', error.message);
-//         res.status(500).json({ message: 'Internal server error', error: error.message });
-//     }
-// };
+const getAllCoveragesRepo = async (req, res) => {
+    try {
+        const coverages = await Coverage.find()
+            .populate('correspondent', 'name CorId district')
+             .populate('Category', 'name');
+        res.status(200).json(coverages);
+    } catch (error) {
+        console.error('Error in getAllCoverages:', error.message);
+        res.status(500).json({ message: 'Internal server error', error: error.message });
+    }
+};
 
 const getAllCoverage = async (req, res) => {
     try {
@@ -335,7 +350,8 @@ const getCoveragesCurrentMonth = async (req, res) => {
                 $lt: new Date(currentYear, currentMonth + 1, 0) 
             }
         })
-        .populate('correspondent', 'name CorId')
+        .populate('correspondent', 'name CorId district')
+        .populate('Category', 'name');
 
         // Send the total count of coverages for the current month
         res.status(200).json({
@@ -657,6 +673,7 @@ module.exports = {
     addCoverage,
     getAllCoverages,
     getAllCoverage,
+    getAllCoveragesRepo,
     getCoverageByNumber,
     getCoveragesByTelecastDate,
     filterCoverages,

@@ -11,6 +11,9 @@ router.post('/coverage/add', verifyToken, coverageController.addCoverage);
 // Get all coverages
 router.get('/coverage/all', verifyToken, coverageController.getAllCoverages);
 
+// Get all coverages for report
+router.get('/coverage/all/repo', verifyToken, coverageController.getAllCoveragesRepo);
+
 // Get a specific coverage by coverage number
 router.get('/coverage/:coverageNumber',  coverageController.getCoverageByNumber);
 
